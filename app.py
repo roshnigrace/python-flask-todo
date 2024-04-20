@@ -162,7 +162,7 @@ def generate_markdown(project_title, completed_todos, total_todos, pending_todos
         },
         'public': False
     }
-    response = requests.post('https://api.github.com/gists', headers=headers, json=data)
+    response = requests.post('https://gist.github.com/roshnigrace/6937ecb97b59eb8905f278e807670c6a.js', headers=headers, json=data)
     
     if response.status_code == 201:
         gist_url = response.json()['html_url']
