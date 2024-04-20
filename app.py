@@ -148,6 +148,21 @@ def generate_markdown(project_title, completed_todos, total_todos, pending_todos
     for todo in completed_todos_list:
         markdown_content += f"- [x] {todo}\n"
     
+    # Define the raw URL of the Gist
+    raw_url = 'https://gist.githubusercontent.com/roshnigrace/6937ecb97b59eb8905f278e807670c6a/raw'
+
+    # Make a GET request to fetch the raw content
+    response = requests.get(raw_url)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Extract the raw content from the response
+        gist_content = response.text
+    else:
+        # Print a failure message if the request was not successful
+        print('Failed to fetch raw content from the Gist')
+        return None  # Return None if fetching raw content fails
+
     # Create a secret gist on GitHub
     access_token = os.environ.get('GITHUB_PAT')
     headers = {
@@ -162,24 +177,12 @@ def generate_markdown(project_title, completed_todos, total_todos, pending_todos
         },
         'public': False
     }
-    response = requests.post('https://gist.github.com/roshnigrace/6937ecb97b59eb8905f278e807670c6a.js', headers=headers, json=data)
-    
+    # response = requests.post('https://gist.github.com/roshnigrace/6937ecb97b59eb8905f278e807670c6a.js', headers=headers, json=data)
+
     if response.status_code == 201:
         gist_url = response.json()['html_url']
         return gist_url  # Return the gist URL as a string
     else:
         return None  # Return None if gist creation fails
-# Route to export project summary as a secret gist on GitHub
-@app.route('/export-summary')
-def export_summary():
-    # Query project summary data from the database
-    project = Project.query.first()  # Assuming there is at least one project in the database
-    completed_todos = Todo.query.filter_by(status='complete').count()
-    total_todos = Todo.query.count()
-    pending_todos = [todo.description for todo in Todo.query.filter_by(status='pending').all()]
-    completed_todos_list = [todo.description for todo in Todo.query.filter_by(status='complete').all()]
-
-    # Render the summary template with the data
-    return render_template('summary.html', project=project, completed_todos=completed_todos, total_todos=total_todos, pending_todos=pending_todos, completed_todos_list=completed_todos_list)
 if __name__ == '__main__':
     app.run(debug=True)
