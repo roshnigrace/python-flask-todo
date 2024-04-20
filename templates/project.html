@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Todo List</h1>
+        <h2>Project Title: {{ project.title }}</h2>
+        <form action="/projects/{{ project.id }}/add-todo" method="POST">
+            <div class="form-group">
+                <label for="todo-description">Add Todo</label>
+                <input type="text" class="form-control" id="todo-description" name="description" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Todo</button>
+        </form>
+        <h2 class="mt-4">Todos</h2>
+        <ul class="list-group">
+            {% for todo in todos %}
+            <li class="list-group-item">
+                <div>{{ todo.description }}</div>
+                <div>Created Date: {{ todo.created_date }}</div>
+                <div>Status: {{ todo.status }}</div>
+                <div class="btn-group" role="group">
+                    <form action="/projects/{{ project.id }}/todos/{{ todo.id }}/update-status" method="POST">
+                        <button type="submit" class="btn {% if todo.status == 'complete' %}btn-warning{% else %}btn-success{% endif %} btn-sm">
+                            {% if todo.status == 'complete' %}
+                            Mark as Pending
+                            {% else %}
+                            Mark as Complete
+                            {% endif %}
+                        </button>
+                    </form>
+                    <form action="/projects/{{ project.id }}/todos/{{ todo.id }}/delete" method="POST">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

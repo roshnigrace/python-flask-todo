@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Manager</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Todo Manager</h1>
+        <h2>Create New Project</h2>
+        <form action="/create-project" method="POST">
+            <div class="form-group">
+                <label for="project-title">Project Title</label>
+                <input type="text" class="form-control" id="project-title" name="title" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Project</button>
+        </form>
+        <h2 class="mt-4">All Projects</h2>
+        <ul class="list-group">
+            {% for project in projects %}
+            <li class="list-group-item">{{ project.title }}
+                <a href="/projects/{{ project.id }}/todo-list" class="btn btn-sm btn-primary">Go to Todo List</a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
