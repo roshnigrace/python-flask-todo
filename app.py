@@ -131,58 +131,50 @@ def ajax_update_todo_status():
         todo.status = status
         db.session.commit()
         return jsonify({'success': True}), 200
-    
-# Function to export project summary as a secret gist on GitHub
-def generate_markdown(project_title, completed_todos, total_todos, pending_todos, completed_todos_list):
-    # Generate markdown content for the gist
-    markdown_content = f"# {project_title}\n\n"
-    markdown_content += f"**Summary:** {completed_todos} / {total_todos} completed.\n\n"
-    
-    # Section 1: Task list of pending todos
-    markdown_content += "## Pending Todos\n"
-    for todo in pending_todos:
-        markdown_content += f"- [ ] {todo}\n"
-    
-    # Section 2: Task list of completed todos
-    markdown_content += "\n## Completed Todos\n"
-    for todo in completed_todos_list:
-        markdown_content += f"- [x] {todo}\n"
-    
-    # Define the raw URL of the Gist
-    raw_url = 'https://gist.githubusercontent.com/roshnigrace/6937ecb97b59eb8905f278e807670c6a/raw'
+    # Define function to generate markdown content for the project summary
+def generate_markdown(project):
+    markdown_content = f"# {project.title}\n\n"
+    markdown_content += f"## Todos\n"
+    for todo in project.todos:
+        status_icon = "[x]" if todo.status == "complete" else "[ ]"
+        markdown_content += f"{status_icon} {todo.description}\n"
+    return markdown_content
 
-    # Make a GET request to fetch the raw content
-    response = requests.get(raw_url)
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Extract the raw content from the response
-        gist_content = response.text
-    else:
-        # Print a failure message if the request was not successful
-        print('Failed to fetch raw content from the Gist')
-        return None  # Return None if fetching raw content fails
-
-    # Create a secret gist on GitHub
-    access_token = os.environ.get('GITHUB_PAT')
-    headers = {
-        'Authorization': f'token {access_token}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
+# Define function to create Gist using GitHub API
+def create_gist(content, filename):
+    gist_api_url = 'https://api.github.com/gists'
     data = {
+        'description': 'Project Summary',
+        'public': False,
         'files': {
-            f'{project_title}.md': {
-                'content': markdown_content
+            filename: {
+                'content': content
             }
-        },
-        'public': False
+        }
     }
-    # response = requests.post('https://gist.github.com/roshnigrace/6937ecb97b59eb8905f278e807670c6a.js', headers=headers, json=data)
-
+    access_token = os.environ.get('GITHUB_PAT')
+    headers = {'Authorization': f'token {access_token}'} if access_token else {}
+    response = requests.post(gist_api_url, headers=headers, json=data)
     if response.status_code == 201:
-        gist_url = response.json()['html_url']
-        return gist_url  # Return the gist URL as a string
+        gist_data = response.json()
+        gist_url = gist_data['html_url']
+        return gist_url
     else:
-        return None  # Return None if gist creation fails
+        print('Failed to create Gist:', response.text)
+        return None
+
+# Routes...
+
+# Route to export project summary as Gist
+@app.route('/projects/<int:project_id>/export-gist', methods=['POST'])
+def export_gist(project_id):
+    project = Project.query.get_or_404(project_id)
+    markdown_content = generate_markdown(project)
+    gist_url = create_gist(markdown_content, f'{project.title}.md')
+    if gist_url:
+        return jsonify({'success': True, 'gist_url': gist_url})
+    else:
+        return jsonify({'success': False, 'error': 'Failed to create Gist'})
+
 if __name__ == '__main__':
     app.run(debug=True)
