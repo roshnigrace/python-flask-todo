@@ -3,6 +3,16 @@ import os
 
 # Function to create a Gist with the given content
 def create_gist(content, filename):
+    """
+    Creates a Gist with the given content.
+
+    Args:
+        content (str): The content of the Gist.
+        filename (str): The filename for the Gist.
+
+    Returns:
+        str: The URL of the created Gist if successful, None otherwise.
+    """
     # Define the Gist API URL
     gist_api_url = 'https://api.github.com/gists'
 
@@ -35,6 +45,19 @@ def create_gist(content, filename):
 
 # Function to generate markdown content for the project summary
 def generate_markdown(project_title, completed_todos, total_todos, pending_todos, completed_todos_list):
+    """
+    Generates markdown content for the project summary.
+
+    Args:
+        project_title (str): The title of the project.
+        completed_todos (int): The number of completed todos.
+        total_todos (int): The total number of todos.
+        pending_todos (list): List of pending todos.
+        completed_todos_list (list): List of completed todos.
+
+    Returns:
+        str: The markdown content for the project summary.
+    """
     # Generate markdown content for the project summary
     markdown_content = f"# {project_title}\n\n"
     markdown_content += f"Summary: {completed_todos} / {total_todos} completed.\n\n"
