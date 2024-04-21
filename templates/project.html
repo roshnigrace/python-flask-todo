@@ -17,6 +17,9 @@
             </div>
             <button type="submit" class="btn btn-primary">Add Todo</button>
         </form>
+        {% if gist_url %}
+        <p>View project summary on GitHub: <a href="{{ gist_url }}">Gist</a></p>
+        {% endif %}
         <h2 class="mt-4">Todos</h2>
         <ul class="list-group">
             {% for todo in todos %}
