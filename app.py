@@ -11,11 +11,12 @@ app = Flask(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
-# Configure Flask app
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:@localhost/todo_db'
-app.config['BASIC_AUTH_USERNAME'] = 'admin'
-app.config['BASIC_AUTH_PASSWORD'] = 'admin'
 
+# Configure Flask app
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
+app.config['BASIC_AUTH_USERNAME'] = os.getenv('BASIC_AUTH_USERNAME')
+app.config['BASIC_AUTH_PASSWORD'] = os.getenv('BASIC_AUTH_PASSWORD')
+app.config['GITHUB_PAT'] = os.getenv('GITHUB_PAT')
 
 # Initialize SQLAlchemy database
 db = SQLAlchemy(app)
@@ -78,13 +79,26 @@ def create_project():
         return redirect(url_for('index'))  # Redirect to the main page after creating the project
 
 # Route to render the project detail page
+# @app.route('/projects/<int:project_id>/todo-list')
+# @basic_auth.required
+# def project_detail(project_id):
+#     project = Project.query.get_or_404(project_id)
+#     todos = project.todos
+#      gist_url = create_secret_gist(project_id)
+
+#     return render_template('project.html', project=project, todos=todos)
+# Route to render the project detail page
+# 
 @app.route('/projects/<int:project_id>/todo-list')
 @basic_auth.required
 def project_detail(project_id):
     project = Project.query.get_or_404(project_id)
     todos = project.todos
-    return render_template('project.html', project=project, todos=todos)
-
+    pending_todos = Todo.query.filter_by(project_id=project_id, status='pending').all()
+    completed_todos = Todo.query.filter_by(project_id=project_id, status='complete').all()
+    gist_url = create_secret_gist(project_id)
+    return render_template('project.html', project=project, todos=todos, pending_todos=pending_todos, completed_todos=completed_todos, gist_url=gist_url)
+# 
 # Route to add a new todo to a project
 @app.route('/projects/<int:project_id>/add-todo', methods=['POST'])
 def add_todo_to_project(project_id):
@@ -131,50 +145,59 @@ def ajax_update_todo_status():
         todo.status = status
         db.session.commit()
         return jsonify({'success': True}), 200
-    # Define function to generate markdown content for the project summary
-def generate_markdown(project):
-    markdown_content = f"# {project.title}\n\n"
-    markdown_content += f"## Todos\n"
+    
+def generate_markdown_summary(project):
+    # Generate markdown summary for the project
+    # Include project title, number of completed todos, list of pending todos, list of completed todos
+    markdown_summary = f"# {project.title}\n"
+    total_todos = len(project.todos)
+    completed_todos = sum(1 for todo in project.todos if todo.status == 'complete')
+    markdown_summary += f"Summary: {completed_todos} / {total_todos} completed\n\n"
+    
+    # Add pending todos
+    markdown_summary += "## Pending Todos\n"
     for todo in project.todos:
-        status_icon = "[x]" if todo.status == "complete" else "[ ]"
-        markdown_content += f"{status_icon} {todo.description}\n"
-    return markdown_content
+        if todo.status == 'pending':
+            markdown_summary += f"- {todo.description}\n"
+    
+    # Add completed todos
+    markdown_summary += "\n## Completed Todos\n"
+    for todo in project.todos:
+        if todo.status == 'complete':
+            markdown_summary += f"- {todo.description}\n"
 
-# Define function to create Gist using GitHub API
-def create_gist(content, filename):
-    gist_api_url = 'https://api.github.com/gists'
-    data = {
-        'description': 'Project Summary',
+    return markdown_summary
+
+def create_secret_gist(project_id):
+    url = 'https://api.github.com/gists'
+    headers = {'Authorization': f'token {app.config["GITHUB_PAT"]}'}
+    project = Project.query.get_or_404(project_id)
+    markdown_summary = generate_markdown_summary(project)
+    payload = {
         'public': False,
         'files': {
-            filename: {
-                'content': content
+            f'{project.title}.md': {
+                'content': markdown_summary
             }
         }
     }
-    access_token = os.environ.get('GITHUB_PAT')
-    headers = {'Authorization': f'token {access_token}'} if access_token else {}
-    response = requests.post(gist_api_url, headers=headers, json=data)
+    response = requests.post(url, headers=headers, json=payload)
     if response.status_code == 201:
-        gist_data = response.json()
-        gist_url = gist_data['html_url']
-        return gist_url
+        return response.json()['html_url']
     else:
-        print('Failed to create Gist:', response.text)
         return None
 
-# Routes...
-
-# Route to export project summary as Gist
-@app.route('/projects/<int:project_id>/export-gist', methods=['POST'])
-def export_gist(project_id):
-    project = Project.query.get_or_404(project_id)
-    markdown_content = generate_markdown(project)
-    gist_url = create_gist(markdown_content, f'{project.title}.md')
-    if gist_url:
-        return jsonify({'success': True, 'gist_url': gist_url})
-    else:
-        return jsonify({'success': False, 'error': 'Failed to create Gist'})
+# Example usage:
+# access_token = 'your-access-token'
+# project_id = 1  # Assuming you have a way to retrieve the project ID
+# gist_url = create_secret_gist(access_token, project_id)
+# if gist_url:
+#     print('Secret gist created:', gist_url)
+# else:
+#     print('Failed to create secret gist')
 
 if __name__ == '__main__':
     app.run(debug=True)
+    
+ 
+    

@@ -42,5 +42,28 @@
             {% endfor %}
         </ul>
     </div>
+    <div class="container mt-5">
+        <h1>{{ project.title }}</h1>
+    
+        <p>Summary: {{ completed_todos|length }} / {{ pending_todos|length + completed_todos|length }} completed.</p>
+        
+        <h3> pending todos</h3>
+        <ul>
+            {% for todo in pending_todos %}
+                <li><input type="checkbox" disabled>{{ todo.description }}</li>
+            {% endfor %}
+        </ul>
+        
+        <h3>completed todos</h3>
+        <ul>
+            {% for todo in completed_todos %}
+                <li><input type="checkbox" disabled checked>{{ todo.description }}</li>
+            {% endfor %}
+        </ul>
+
+        {% if gist_url %}
+        <p>View project summary on GitHub: <a href="{{ gist_url }}">Gist</a></p>
+        {% endif %}
+    </div>
 </body>
 </html>
